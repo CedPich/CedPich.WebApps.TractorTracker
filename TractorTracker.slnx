@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/TractorTracker.Api/TractorTracker.Api.csproj" />
+    <Project Path="src/TractorTracker.Application/TractorTracker.Application.csproj" />
+    <Project Path="src/TractorTracker.Domain/TractorTracker.Domain.csproj" />
+    <Project Path="src/TractorTracker.Infrastructure/TractorTracker.Infrastructure.csproj" />
+  </Folder>
+</Solution>
