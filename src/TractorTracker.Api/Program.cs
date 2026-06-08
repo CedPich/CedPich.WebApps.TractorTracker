@@ -1,5 +1,7 @@
+using Microsoft.EntityFrameworkCore;
 using TractorTracker.Application.UseCases;
 using TractorTracker.Infrastructure;
+using TractorTracker.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,7 +13,6 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddScoped<GetCurrentPosition>();
 builder.Services.AddScoped<GetPositionHistory>();
 builder.Services.AddScoped<GetDailyWorkHours>();
-builder.Services.AddScoped<SyncTrackerData>();
 
 builder.Services.AddCors(opt =>
     opt.AddDefaultPolicy(policy =>
@@ -20,6 +21,13 @@ builder.Services.AddCors(opt =>
               .AllowAnyMethod()));
 
 var app = builder.Build();
+
+// Auto-migration au démarrage
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await db.Database.MigrateAsync();
+}
 
 if (app.Environment.IsDevelopment())
     app.MapOpenApi();

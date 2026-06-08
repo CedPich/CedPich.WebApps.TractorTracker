@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using TractorTracker.Application.DTOs;
-using TractorTracker.Application.Interfaces;
 using TractorTracker.Application.UseCases;
 
 namespace TractorTracker.Api.Controllers;
@@ -10,8 +9,7 @@ namespace TractorTracker.Api.Controllers;
 public class MachinesController(
     GetCurrentPosition getCurrentPosition,
     GetPositionHistory getPositionHistory,
-    GetDailyWorkHours getDailyWorkHours,
-    ITrackerSyncService syncService) : ControllerBase
+    GetDailyWorkHours getDailyWorkHours) : ControllerBase
 {
     [HttpGet("{machineId:guid}/position")]
     public async Task<ActionResult<PositionDto>> GetCurrentPosition(Guid machineId, CancellationToken ct)
@@ -42,12 +40,5 @@ public class MachinesController(
         if (from > to) return BadRequest("'from' must be before or equal to 'to'.");
         var result = await getDailyWorkHours.ExecuteAsync(machineId, from, to, ct);
         return Ok(result);
-    }
-
-    [HttpPost("{machineId:guid}/sync")]
-    public async Task<IActionResult> Sync(Guid machineId, CancellationToken ct)
-    {
-        await syncService.SyncMachineAsync(machineId, ct);
-        return NoContent();
     }
 }

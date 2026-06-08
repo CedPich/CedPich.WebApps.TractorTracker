@@ -3,44 +3,45 @@ services:
     build:
       context: .
       dockerfile: src/TractorTracker.Api/Dockerfile
-    ports:
-      - "5000:8080"
+    container_name: tractortracker-api
+    restart: unless-stopped
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
-      - ConnectionStrings__Default=Host=db;Port=5432;Database=tractortracker;Username=postgres;Password=${POSTGRES_PASSWORD}
-      - Ticatag__ApiKey=${TICATAG_API_KEY}
-      - AllowedOrigins__0=http://localhost:3000
-    depends_on:
-      db:
-        condition: service_healthy
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_HTTP_PORTS: "8080"
+      ConnectionStrings__Default: "Host=cedpich-postgis-db;Port=5432;Database=${DB_NAME:?required};Username=${DB_USER:?required};Password=${DB_PASSWORD:?required}"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - cedpich-db
+      - tractortracker-internal
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - VITE_API_URL=http://localhost:5000
-        - VITE_MACHINE_ID=${MACHINE_ID}
-    ports:
-      - "3000:80"
+        - VITE_API_URL=
+        - VITE_MACHINE_ID=${MACHINE_ID:?required}
+    container_name: tractortracker-frontend
+    restart: unless-stopped
+    environment:
+      VIRTUAL_HOST: ${VIRTUAL_HOST:?required}
+      VIRTUAL_PORT: 80
+      LETSENCRYPT_HOST: ${VIRTUAL_HOST}
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:?required}
     depends_on:
       - api
+    networks:
+      - nginx-proxy
+      - tractortracker-internal
 
-  db:
-    image: postgis/postgis:16-3.4
-    environment:
-      POSTGRES_DB: tractortracker
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-volumes:
-  pgdata:
+networks:
+  nginx-proxy:
+    external: true
+  cedpich-db:
+    external: true
+  tractortracker-internal:
+    driver: bridge
