@@ -2,8 +2,6 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { machineApi, type PositionDto, type DailyWorkHoursDto } from '@/api/machineApi'
 
-export const MACHINE_ID = import.meta.env.VITE_MACHINE_ID ?? ''
-
 export const useMachineStore = defineStore('machine', () => {
   const currentPosition = ref<PositionDto | null>(null)
   const history = ref<PositionDto[]>([])
@@ -13,8 +11,8 @@ export const useMachineStore = defineStore('machine', () => {
 
   async function fetchCurrentPosition() {
     try {
-      currentPosition.value = await machineApi.getCurrentPosition(MACHINE_ID)
-    } catch (e) {
+      currentPosition.value = await machineApi.getCurrentPosition()
+    } catch {
       error.value = 'Impossible de récupérer la position actuelle.'
     }
   }
@@ -22,9 +20,9 @@ export const useMachineStore = defineStore('machine', () => {
   async function fetchHistory(from: string, to: string) {
     loading.value = true
     try {
-      history.value = await machineApi.getHistory(MACHINE_ID, from, to)
-    } catch (e) {
-      error.value = 'Impossible de récupérer l\'historique.'
+      history.value = await machineApi.getHistory(from, to)
+    } catch {
+      error.value = "Impossible de récupérer l'historique."
     } finally {
       loading.value = false
     }
@@ -33,8 +31,8 @@ export const useMachineStore = defineStore('machine', () => {
   async function fetchWorkHours(from: string, to: string) {
     loading.value = true
     try {
-      workHours.value = await machineApi.getWorkHours(MACHINE_ID, from, to)
-    } catch (e) {
+      workHours.value = await machineApi.getWorkHours(from, to)
+    } catch {
       error.value = 'Impossible de récupérer les heures travaillées.'
     } finally {
       loading.value = false

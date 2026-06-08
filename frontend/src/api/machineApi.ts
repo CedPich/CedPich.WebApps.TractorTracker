@@ -19,15 +19,12 @@ export interface DailyWorkHoursDto {
 }
 
 export const machineApi = {
-  getCurrentPosition: (machineId: string) =>
-    http.get<PositionDto>(`/api/machines/${machineId}/position`).then(r => r.data),
+  getCurrentPosition: () =>
+    http.get<PositionDto>('/api/machine/position').then(r => r.data),
 
-  getHistory: (machineId: string, from: string, to: string) =>
-    http.get<PositionDto[]>(`/api/machines/${machineId}/history`, { params: { from, to } }).then(r => r.data),
+  getHistory: (from: string, to: string) =>
+    http.get<PositionDto[]>('/api/machine/history', { params: { from, to } }).then(r => r.data),
 
-  getWorkHours: (machineId: string, from: string, to: string) =>
-    http.get<DailyWorkHoursDto[]>(`/api/machines/${machineId}/work-hours`, { params: { from, to } }).then(r => r.data),
-
-  sync: (machineId: string) =>
-    http.post(`/api/machines/${machineId}/sync`),
+  getWorkHours: (from: string, to: string) =>
+    http.get<DailyWorkHoursDto[]>('/api/machine/work-hours', { params: { from, to } }).then(r => r.data),
 }

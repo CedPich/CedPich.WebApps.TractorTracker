@@ -1,44 +1,46 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using TractorTracker.Application.DTOs;
 using TractorTracker.Application.UseCases;
 
 namespace TractorTracker.Api.Controllers;
 
 [ApiController]
-[Route("api/machines")]
+[Route("api/machine")]
 public class MachinesController(
     GetCurrentPosition getCurrentPosition,
     GetPositionHistory getPositionHistory,
-    GetDailyWorkHours getDailyWorkHours) : ControllerBase
+    GetDailyWorkHours getDailyWorkHours,
+    IOptions<AppOptions> options) : ControllerBase
 {
-    [HttpGet("{machineId:guid}/position")]
-    public async Task<ActionResult<PositionDto>> GetCurrentPosition(Guid machineId, CancellationToken ct)
+    private Guid MachineId => options.Value.MachineId;
+
+    [HttpGet("position")]
+    public async Task<ActionResult<PositionDto>> GetCurrentPosition(CancellationToken ct)
     {
-        var result = await getCurrentPosition.ExecuteAsync(machineId, ct);
+        var result = await getCurrentPosition.ExecuteAsync(MachineId, ct);
         return result is null ? NotFound() : Ok(result);
     }
 
-    [HttpGet("{machineId:guid}/history")]
+    [HttpGet("history")]
     public async Task<ActionResult<IReadOnlyList<PositionDto>>> GetHistory(
-        Guid machineId,
         [FromQuery] DateTimeOffset from,
         [FromQuery] DateTimeOffset to,
         CancellationToken ct)
     {
         if (from >= to) return BadRequest("'from' must be before 'to'.");
-        var result = await getPositionHistory.ExecuteAsync(machineId, from, to, ct);
+        var result = await getPositionHistory.ExecuteAsync(MachineId, from, to, ct);
         return Ok(result);
     }
 
-    [HttpGet("{machineId:guid}/work-hours")]
+    [HttpGet("work-hours")]
     public async Task<ActionResult<IReadOnlyList<DailyWorkHoursDto>>> GetWorkHours(
-        Guid machineId,
         [FromQuery] DateOnly from,
         [FromQuery] DateOnly to,
         CancellationToken ct)
     {
         if (from > to) return BadRequest("'from' must be before or equal to 'to'.");
-        var result = await getDailyWorkHours.ExecuteAsync(machineId, from, to, ct);
+        var result = await getDailyWorkHours.ExecuteAsync(MachineId, from, to, ct);
         return Ok(result);
     }
 }
