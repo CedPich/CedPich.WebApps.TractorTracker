@@ -60,13 +60,19 @@ onMounted(refresh)
 </template>
 
 <style scoped>
-.dashboard { display: flex; flex-direction: column; gap: 1.5rem; padding: 1rem; font-family: sans-serif; }
-.dashboard-header { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
-.dashboard-header h1 { margin: 0; font-size: 1.5rem; }
+.dashboard { display: flex; flex-direction: column; gap: 1.5rem; padding: 1rem; }
+.dashboard-header { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; border-bottom: 1px solid #374151; padding-bottom: 0.75rem; }
+.dashboard-header h1 { margin: 0; font-size: 1.5rem; color: #f9fafb; }
 .filters { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
-.filters label { display: flex; flex-direction: column; font-size: 0.85rem; }
-.map-section { position: relative; height: 450px; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb; }
-.position-info { position: absolute; top: 0.75rem; right: 0.75rem; background: rgba(255,255,255,0.9); padding: 0.5rem 0.75rem; border-radius: 6px; display: flex; flex-direction: column; gap: 2px; font-size: 0.85rem; }
-.chart-section { padding: 1rem; background: #f9fafb; border-radius: 8px; }
-.error { color: #dc2626; padding: 0.5rem; background: #fee2e2; border-radius: 4px; }
+.filters label { display: flex; flex-direction: column; font-size: 0.85rem; color: #9ca3af; }
+.filters input[type="date"] { background: #1f2937; color: #f3f4f6; border: 1px solid #374151; border-radius: 4px; padding: 0.25rem 0.5rem; font-size: 0.85rem; }
+.filters input[type="date"]:focus { outline: none; border-color: #3b82f6; }
+.filters button { background: #3b82f6; color: #fff; border: none; border-radius: 4px; padding: 0.35rem 0.9rem; font-size: 0.85rem; cursor: pointer; }
+.filters button:hover { background: #2563eb; }
+.map-section { position: relative; height: 450px; border-radius: 8px; overflow: hidden; border: 1px solid #374151; }
+.position-info { position: absolute; top: 0.75rem; right: 0.75rem; background: rgba(17,24,39,0.88); color: #f3f4f6; padding: 0.5rem 0.75rem; border-radius: 6px; display: flex; flex-direction: column; gap: 2px; font-size: 0.85rem; border: 1px solid #374151; }
+.chart-section { padding: 1rem; background: #1f2937; border-radius: 8px; border: 1px solid #374151; }
+.chart-section h2 { font-size: 1rem; color: #d1d5db; margin-bottom: 0.75rem; }
+.chart-section p { color: #6b7280; }
+.error { color: #fca5a5; padding: 0.5rem; background: #450a0a; border-radius: 4px; }
 </style>

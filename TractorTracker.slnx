@@ -5,4 +5,7 @@
     <Project Path="src/TractorTracker.Domain/TractorTracker.Domain.csproj" />
     <Project Path="src/TractorTracker.Infrastructure/TractorTracker.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/Éléments de solution/">
+    <File Path="README.md" />
+  </Folder>
 </Solution>

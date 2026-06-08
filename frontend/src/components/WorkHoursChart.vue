@@ -21,7 +21,18 @@ const chartData = computed(() => ({
 const options = {
   responsive: true,
   plugins: { legend: { display: false } },
-  scales: { y: { beginAtZero: true, title: { display: true, text: 'Heures' } } },
+  scales: {
+    x: {
+      ticks: { color: '#9ca3af' },
+      grid: { color: '#374151' },
+    },
+    y: {
+      beginAtZero: true,
+      ticks: { color: '#9ca3af' },
+      grid: { color: '#374151' },
+      title: { display: true, text: 'Heures', color: '#9ca3af' },
+    },
+  },
 }
 </script>
 
