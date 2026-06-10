@@ -5,7 +5,7 @@ RUN npm ci
 COPY . .
 ARG VITE_API_URL
 ARG VITE_MACHINE_ID
-RUN npm run build
+RUN npm run build-only
 
 FROM nginx:alpine AS final
 COPY --from=build /app/dist /usr/share/nginx/html
