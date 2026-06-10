@@ -14,7 +14,11 @@ public static class DependencyInjection
         services.AddDbContext<AppDbContext>(opt =>
             opt.UseNpgsql(
                 config.GetConnectionString("Default"),
-                npgsql => npgsql.UseNetTopologySuite()));
+                npgsql =>
+                {
+                    npgsql.UseNetTopologySuite();
+                    npgsql.EnableRetryOnFailure(maxRetryCount: 3);
+                }));
 
         services.AddScoped<IMachineRepository, MachineRepository>();
         services.AddScoped<IPositionRepository, PositionRepository>();
