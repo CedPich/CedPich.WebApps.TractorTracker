@@ -1,8 +1,8 @@
 import axios from 'axios'
 
-// En production VITE_API_URL est vide → URLs relatives, nginx proxifie /api/ vers l'API
+// En production VITE_API_URL est vide → baseURL undefined → URLs relatives, nginx proxifie /api/
 // En dev VITE_API_URL=http://localhost:5000
-const http = axios.create({ baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000' })
+const http = axios.create({ baseURL: import.meta.env.VITE_API_URL || undefined })
 
 export interface PositionDto {
   latitude: number
