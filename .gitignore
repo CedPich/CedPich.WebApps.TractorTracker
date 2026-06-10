@@ -14,5 +14,8 @@ frontend/.env
 # Env secrets
 .env
 
+# Logs
+logs/
+
 # Docker
 .dockerignore

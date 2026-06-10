@@ -1,10 +1,26 @@
 using Microsoft.EntityFrameworkCore;
+using Serilog;
+using Serilog.Filters;
 using TractorTracker.Api;
 using TractorTracker.Application.UseCases;
 using TractorTracker.Infrastructure;
 using TractorTracker.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog((ctx, cfg) =>
+{
+    var logPath = ctx.Configuration["Logging:WebhookRawLogPath"] ?? "logs/webhook-raw-.json";
+
+    cfg.ReadFrom.Configuration(ctx.Configuration)
+       .WriteTo.Console()
+       .WriteTo.Logger(lc => lc
+           .Filter.ByIncludingOnly(Matching.FromSource("Webhook.Raw"))
+           .WriteTo.File(
+               logPath,
+               rollingInterval: RollingInterval.Day,
+               outputTemplate: "{Message:lj}{NewLine}"));
+});
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
@@ -24,7 +40,6 @@ builder.Services.AddCors(opt =>
 
 var app = builder.Build();
 
-// Auto-migration au démarrage
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();

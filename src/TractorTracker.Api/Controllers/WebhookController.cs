@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using NetTopologySuite.Geometries;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using TractorTracker.Domain.Entities;
 using TractorTracker.Domain.Repositories;
@@ -11,17 +12,35 @@ namespace TractorTracker.Api.Controllers;
 public class WebhookController(
     IMachineRepository machines,
     IPositionRepository positions,
-    ILogger<WebhookController> logger) : ControllerBase
+    ILogger<WebhookController> logger,
+    ILoggerFactory loggerFactory) : ControllerBase
 {
     private static readonly GeometryFactory GeoFactory = new(new PrecisionModel(), 4326);
+    private readonly ILogger _rawLogger = loggerFactory.CreateLogger("Webhook.Raw");
 
     [HttpPost("ticatag")]
-    public async Task<IActionResult> TicatagWebhook(
-        [FromBody] TicatagWebhookPayload payload,
-        CancellationToken ct)
+    public async Task<IActionResult> TicatagWebhook(CancellationToken ct)
     {
-        if (payload.HookEvent != "location_changed")
-            return Ok(); // ignorer les autres types d'événements
+        Request.EnableBuffering();
+        using var reader = new StreamReader(Request.Body, leaveOpen: true);
+        var rawJson = await reader.ReadToEndAsync(ct);
+        Request.Body.Position = 0;
+
+        _rawLogger.LogInformation("{RawJson}", rawJson);
+
+        TicatagWebhookPayload? payload;
+        try
+        {
+            payload = JsonSerializer.Deserialize<TicatagWebhookPayload>(rawJson);
+        }
+        catch (JsonException ex)
+        {
+            logger.LogWarning(ex, "Payload webhook invalide");
+            return Ok();
+        }
+
+        if (payload is null || payload.HookEvent != "location_changed")
+            return Ok();
 
         var serialNumber = payload.Device?.SerialNumber;
         if (string.IsNullOrEmpty(serialNumber))
@@ -34,7 +53,7 @@ public class WebhookController(
         if (machine is null)
         {
             logger.LogWarning("Webhook reçu pour un appareil inconnu : {SerialNumber}", serialNumber);
-            return Ok(); // 200 pour éviter les retries Ticatag
+            return Ok();
         }
 
         var ev = payload.Event;
@@ -52,8 +71,6 @@ public class WebhookController(
         return Ok();
     }
 }
-
-// ---- DTOs de désérialisation ----
 
 public record TicatagWebhookPayload(
     [property: JsonPropertyName("hook_event")] string HookEvent,

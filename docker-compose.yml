@@ -9,6 +9,10 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_HTTP_PORTS: "8080"
       ConnectionStrings__Default: "Host=cedpich-postgis-db;Port=5432;Database=${DB_NAME:?required};Username=${DB_USER:?required};Password=${DB_PASSWORD:?required}"
+      AllowedOrigins__0: https://${VIRTUAL_HOST:?required}
+      Logging__WebhookRawLogPath: /app/logs/webhook-raw-.json
+    volumes:
+      - ./logs:/app/logs
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
       interval: 30s
@@ -24,7 +28,6 @@ services:
       dockerfile: Dockerfile
       args:
         - VITE_API_URL=
-        - VITE_MACHINE_ID=${MACHINE_ID:?required}
     container_name: tractortracker-frontend
     restart: unless-stopped
     environment:
