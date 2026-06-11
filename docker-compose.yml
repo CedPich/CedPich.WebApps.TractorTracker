@@ -11,6 +11,9 @@ services:
       ConnectionStrings__Default: "Host=cedpich-postgis-db;Port=5432;Database=${DB_NAME:?required};Username=${DB_USER:?required};Password=${DB_PASSWORD:?required}"
       AllowedOrigins__0: https://${VIRTUAL_HOST:?required}
       Logging__WebhookRawLogPath: /app/logs/webhook-raw-.json
+      App__Vapid__Subject: ${VAPID_SUBJECT:?required}
+      App__Vapid__PublicKey: ${VAPID_PUBLIC_KEY:?required}
+      App__Vapid__PrivateKey: ${VAPID_PRIVATE_KEY:?required}
     volumes:
       - ./logs:/app/logs
     healthcheck:

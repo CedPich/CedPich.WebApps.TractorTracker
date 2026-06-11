@@ -8,11 +8,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 {
     public DbSet<Machine> Machines => Set<Machine>();
     public DbSet<PositionRecord> PositionRecords => Set<PositionRecord>();
+    public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasPostgresExtension("postgis");
         modelBuilder.ApplyConfiguration(new MachineConfiguration());
         modelBuilder.ApplyConfiguration(new PositionRecordConfiguration());
+        modelBuilder.ApplyConfiguration(new PushSubscriptionConfiguration());
     }
 }

@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using TractorTracker.Domain.Entities;
 using TractorTracker.Domain.Repositories;
+using TractorTracker.Infrastructure.Services;
 
 namespace TractorTracker.Api.Controllers;
 
@@ -12,10 +13,12 @@ namespace TractorTracker.Api.Controllers;
 public class WebhookController(
     IMachineRepository machines,
     IPositionRepository positions,
+    PushNotificationService push,
     ILogger<WebhookController> logger,
     ILoggerFactory loggerFactory) : ControllerBase
 {
     private static readonly GeometryFactory GeoFactory = new(new PrecisionModel(), 4326);
+    private static readonly TimeSpan InactivityThreshold = TimeSpan.FromHours(4);
     private readonly ILogger _rawLogger = loggerFactory.CreateLogger("Webhook.Raw");
 
     [HttpPost("ticatag")]
@@ -57,6 +60,11 @@ public class WebhookController(
         }
 
         var ev = payload.Event;
+
+        var lastAt = await positions.GetLastRecordedAtAsync(machine.Id, ct);
+        var isResumingAfterInactivity = lastAt is null
+            || (ev.Timestamp - lastAt.Value) >= InactivityThreshold;
+
         var record = new PositionRecord(
             machine.Id,
             GeoFactory.CreatePoint(new Coordinate(ev.Longitude, ev.Latitude)),
@@ -67,6 +75,12 @@ public class WebhookController(
 
         logger.LogInformation("Position enregistrée pour {MachineName} : {Lat},{Lng} à {Timestamp}",
             machine.Name, ev.Latitude, ev.Longitude, ev.Timestamp);
+
+        if (isResumingAfterInactivity)
+        {
+            logger.LogInformation("Reprise d'activité après inactivité, envoi notification push");
+            await push.SendAsync("TractorTracker", $"{machine.Name} est en marche 🚜", ct);
+        }
 
         return Ok();
     }

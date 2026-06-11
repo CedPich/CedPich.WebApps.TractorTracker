@@ -4,6 +4,7 @@ import { useMachineStore } from '@/stores/machineStore'
 import TrackerMap from '@/components/TrackerMap.vue'
 import WorkHoursChart from '@/components/WorkHoursChart.vue'
 import MapFilters from '@/components/MapFilters.vue'
+import { registerPushNotifications } from '@/composables/usePushNotifications'
 
 const store = useMachineStore()
 
@@ -27,7 +28,10 @@ async function refreshWorkHours() {
   await store.fetchWorkHours(toIso(workFrom.value), toIso(workTo.value))
 }
 
-onMounted(refreshWorkHours)
+onMounted(() => {
+  refreshWorkHours()
+  registerPushNotifications()
+})
 </script>
 
 <template>
