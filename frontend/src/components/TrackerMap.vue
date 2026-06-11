@@ -113,6 +113,21 @@ function updateFeatures() {
     map.getView().fit(extent, { padding: [48, 48, 48, 48], maxZoom: 17, duration: 500 })
   }
 }
+
+function zoomToTractor() {
+  if (!props.currentPosition) return
+  map.getView().animate({
+    center: fromLonLat([props.currentPosition.longitude, props.currentPosition.latitude]),
+    zoom: 17,
+    duration: 400,
+  })
+}
+
+function zoomToExtent() {
+  const extent = vectorSource.getExtent()
+  if (isFinite(extent[0]))
+    map.getView().fit(extent, { padding: [48, 48, 48, 48], maxZoom: 17, duration: 400 })
+}
 </script>
 
 <template>
@@ -122,11 +137,41 @@ function updateFeatures() {
       <div class="popup-time">{{ popup.time }}</div>
       <div class="popup-coords">{{ popup.lat }}, {{ popup.lng }}</div>
     </div>
+    <div class="map-controls">
+      <button class="map-btn" :disabled="!currentPosition" title="Centrer sur le tracteur" @click="zoomToTractor">🚜</button>
+      <button class="map-btn" title="Zoom sur l'emprise" @click="zoomToExtent">⛶</button>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .tracker-map { width: 100%; height: 100%; min-height: 400px; }
+
+.map-controls {
+  position: absolute;
+  bottom: 0.75rem;
+  right: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  z-index: 10;
+}
+.map-btn {
+  width: 2rem;
+  height: 2rem;
+  background: rgba(17, 24, 39, 0.88);
+  border: 1px solid #374151;
+  border-radius: 4px;
+  color: #f3f4f6;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+.map-btn:hover:not(:disabled) { background: rgba(55, 65, 81, 0.95); }
+.map-btn:disabled { opacity: 0.35; cursor: default; }
 
 .map-popup {
   position: absolute;

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
 
 type Mode = 'day' | 'range'
 
@@ -12,20 +12,52 @@ const today = new Date()
 function isoDate(d: Date): string { return d.toISOString().substring(0, 10) }
 function daysAgo(n: number): string { const d = new Date(today); d.setDate(d.getDate() - n); return isoDate(d) }
 
-const selectedDate = ref(isoDate(today))
+const todayStr = isoDate(today)
+const selectedDate = ref(todayStr)
 // Minutes depuis minuit, pas de 15, max 1440 (= 00:00 lendemain)
 const startMinutes = ref(0)
 const endMinutes = ref(1440)
 
 const quickDays = [
-  { label: "Aujourd'hui", value: isoDate(today) },
+  { label: "Aujourd'hui", value: todayStr },
   { label: 'Hier', value: daysAgo(1) },
   { label: 'Avant-hier', value: daysAgo(2) },
 ]
 
+// --- Mode live ---
+const liveMode = ref(false)
+const isToday = computed(() => mode.value === 'day' && selectedDate.value === todayStr)
+let liveInterval: ReturnType<typeof setInterval> | null = null
+
+function stopLive() {
+  if (liveInterval !== null) {
+    clearInterval(liveInterval)
+    liveInterval = null
+  }
+}
+
+function toggleLive() {
+  liveMode.value = !liveMode.value
+  if (liveMode.value) {
+    liveInterval = setInterval(() => emit('change', from.value, new Date().toISOString()), 30_000)
+  } else {
+    stopLive()
+  }
+}
+
+// Désactiver le live si on quitte aujourd'hui ou le mode journée
+watch(isToday, (val) => {
+  if (!val && liveMode.value) {
+    liveMode.value = false
+    stopLive()
+  }
+})
+
+onUnmounted(stopLive)
+
 // --- Mode intervalle ---
 const rangeFrom = ref(daysAgo(7))
-const rangeTo = ref(isoDate(today))
+const rangeTo = ref(todayStr)
 
 function localToIsoMinutes(dateStr: string, totalMinutes: number, isEnd: boolean): string {
   const [y, m, d] = dateStr.split('-').map(Number)
@@ -44,6 +76,7 @@ const from = computed(() => {
 })
 
 const to = computed(() => {
+  if (liveMode.value) return new Date().toISOString()
   if (mode.value === 'day')
     return localToIsoMinutes(selectedDate.value, endMinutes.value, true)
   return localToIsoMinutes(rangeTo.value, 1440, true)
@@ -75,18 +108,23 @@ function formatMinutes(m: number): string {
           @click="selectedDate = q.value"
         >{{ q.label }}</button>
         <input type="date" v-model="selectedDate" :max="isoDate(today)" />
+
+        <button v-if="isToday" class="live-btn" :class="{ active: liveMode }" @click="toggleLive">
+          <span class="live-dot" :class="{ pulse: liveMode }" />
+          Live
+        </button>
       </div>
 
-      <div class="sliders">
+      <div class="sliders" :class="{ dimmed: liveMode }">
         <div class="slider-row">
           <span class="slider-label">Début</span>
-          <input type="range" v-model.number="startMinutes" min="0" :max="endMinutes" step="15" />
+          <input type="range" v-model.number="startMinutes" min="0" :max="endMinutes" step="15" :disabled="liveMode" />
           <span class="slider-value">{{ formatMinutes(startMinutes) }}</span>
         </div>
         <div class="slider-row">
           <span class="slider-label">Fin</span>
-          <input type="range" v-model.number="endMinutes" :min="startMinutes" max="1440" step="15" />
-          <span class="slider-value">{{ formatMinutes(endMinutes) }}</span>
+          <input type="range" v-model.number="endMinutes" :min="startMinutes" max="1440" step="15" :disabled="liveMode" />
+          <span class="slider-value">{{ liveMode ? 'maintenant' : formatMinutes(endMinutes) }}</span>
         </div>
       </div>
     </template>
@@ -172,10 +210,47 @@ function formatMinutes(m: number): string {
   font-size: 0.8rem;
 }
 
-.sliders { display: flex; flex-direction: column; gap: 0.5rem; }
+.live-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
+  padding: 0.25rem 0.65rem;
+  border: 1px solid #374151;
+  border-radius: 4px;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.15s;
+}
+.live-btn.active {
+  background: #052e16;
+  border-color: #16a34a;
+  color: #4ade80;
+}
+
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #6b7280;
+  flex-shrink: 0;
+}
+.live-dot.pulse {
+  background: #4ade80;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.sliders { display: flex; flex-direction: column; gap: 0.5rem; transition: opacity 0.2s; }
+.sliders.dimmed { opacity: 0.4; pointer-events: none; }
 .slider-row { display: flex; align-items: center; gap: 0.6rem; }
 .slider-label { font-size: 0.8rem; color: #9ca3af; width: 2.5rem; }
-.slider-value { font-size: 0.8rem; color: #f3f4f6; width: 3rem; text-align: right; font-variant-numeric: tabular-nums; }
+.slider-value { font-size: 0.8rem; color: #f3f4f6; width: 4.5rem; text-align: right; font-variant-numeric: tabular-nums; }
 input[type="range"] {
   flex: 1;
   accent-color: #3b82f6;

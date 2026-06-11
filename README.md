@@ -130,6 +130,7 @@ Variables requises en production :
 | `VAPID_SUBJECT` | Email de contact VAPID, ex. `mailto:ton@email.fr` |
 | `VAPID_PUBLIC_KEY` | Clé publique VAPID (générer ci-dessous) |
 | `VAPID_PRIVATE_KEY` | Clé privée VAPID (générer ci-dessous) |
+| `INACTIVITY_THRESHOLD_HOURS` | Seuil d'inactivité avant notification push (défaut : `4`) |
 
 **Générer les clés VAPID (une seule fois, ne jamais les changer ensuite) :**
 
