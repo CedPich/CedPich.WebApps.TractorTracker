@@ -43,7 +43,6 @@ Renseigner dans `.env` :
 | `DB_NAME` | `tractor_tracker` |
 | `DB_USER` | valeur de `DB_USER_TRACTOR_TRACKER` dans `D:\Docker\PostGIS\.env` |
 | `DB_PASSWORD` | valeur de `DB_PASS_TRACTOR_TRACKER` dans `D:\Docker\PostGIS\.env` |
-| `MACHINE_ID` | UUID de la machine (après insertion en base) |
 
 Copier `src/TractorTracker.Api/appsettings.json` et créer `appsettings.Development.json` avec la chaîne de connexion locale :
 
@@ -71,15 +70,17 @@ Les migrations sont appliquées **automatiquement au démarrage** de l'API.
 
 ```bash
 dotnet run --project src/TractorTracker.Api
-# API disponible sur https://localhost:5001 / http://localhost:5000
-# OpenAPI : http://localhost:5000/openapi/v1.json
+# API disponible sur http://localhost:5204
+# OpenAPI : http://localhost:5204/openapi/v1.json
 ```
+
+> En dev, CORS est ouvert sur toutes les origines. En prod, seul `VIRTUAL_HOST` est autorisé.
 
 ### 4. Lancer le frontend
 
 ```bash
 cd frontend
-cp .env.example .env   # VITE_API_URL=http://localhost:5000
+copy .env.example .env   # VITE_API_URL=http://localhost:5204
 npm install
 npm run dev
 # Frontend sur http://localhost:5173
@@ -88,7 +89,7 @@ npm run dev
 ### 5. Simuler un webhook Ticatag en local
 
 ```bash
-curl -X POST http://localhost:5000/api/webhook/ticatag \
+curl -X POST http://localhost:5204/api/webhook/ticatag \
   -H "Content-Type: application/json" \
   -d '{
     "hook_event": "location_changed",

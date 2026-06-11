@@ -34,9 +34,14 @@ builder.Services.AddScoped<GetDailyWorkHours>();
 
 builder.Services.AddCors(opt =>
     opt.AddDefaultPolicy(policy =>
-        policy.WithOrigins(builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? ["http://localhost:5173"])
-              .AllowAnyHeader()
-              .AllowAnyMethod()));
+    {
+        if (builder.Environment.IsDevelopment())
+            policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+        else
+            policy.WithOrigins(builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? [])
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+    }));
 
 var app = builder.Build();
 
@@ -49,8 +54,8 @@ using (var scope = app.Services.CreateScope())
 if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 
-app.UseHttpsRedirection();
 app.UseCors();
+app.UseHttpsRedirection();
 app.MapControllers();
 
 app.Run();
