@@ -21,6 +21,7 @@ public class WebhookController(
 {
     private static readonly GeometryFactory GeoFactory = new(new PrecisionModel(), 4326);
     private readonly ILogger _rawLogger = loggerFactory.CreateLogger("Webhook.Raw");
+    private bool RawLogEnabled => options.Value.EnableWebhookRawLog;
 
     [HttpPost("ticatag")]
     public async Task<IActionResult> TicatagWebhook(CancellationToken ct)
@@ -30,7 +31,8 @@ public class WebhookController(
         var rawJson = await reader.ReadToEndAsync(ct);
         Request.Body.Position = 0;
 
-        _rawLogger.LogInformation("{RawJson}", rawJson);
+        if (RawLogEnabled)
+            _rawLogger.LogInformation("{RawJson}", rawJson);
 
         TicatagWebhookPayload? payload;
         try

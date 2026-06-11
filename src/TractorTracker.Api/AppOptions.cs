@@ -5,6 +5,7 @@ public class AppOptions
     public const string SectionName = "App";
     public Guid MachineId { get; set; }
     public int InactivityThresholdHours { get; set; } = 4;
+    public bool EnableWebhookRawLog { get; set; } = true;
     public VapidOptions Vapid { get; set; } = new();
 }
 

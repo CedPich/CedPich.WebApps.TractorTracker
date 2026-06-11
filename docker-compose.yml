@@ -12,6 +12,7 @@ services:
       AllowedOrigins__0: https://${VIRTUAL_HOST:?required}
       Logging__WebhookRawLogPath: /app/logs/webhook-raw-.json
       App__InactivityThresholdHours: ${INACTIVITY_THRESHOLD_HOURS:-4}
+      App__EnableWebhookRawLog: ${ENABLE_WEBHOOK_RAW_LOG:-true}
       App__Vapid__Subject: ${VAPID_SUBJECT:?required}
       App__Vapid__PublicKey: ${VAPID_PUBLIC_KEY:?required}
       App__Vapid__PrivateKey: ${VAPID_PRIVATE_KEY:?required}
