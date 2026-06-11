@@ -5,6 +5,7 @@ RUN npm ci
 COPY . .
 ARG VITE_API_URL
 ARG VITE_MACHINE_ID
+ARG VITE_MAPBOX_TOKEN
 RUN npm run build-only
 
 FROM nginx:alpine AS final

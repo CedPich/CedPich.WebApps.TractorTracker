@@ -6,12 +6,16 @@ import TileLayer from 'ol/layer/Tile'
 import VectorLayer from 'ol/layer/Vector'
 import VectorSource from 'ol/source/Vector'
 import OSM from 'ol/source/OSM'
+import XYZ from 'ol/source/XYZ'
 import Feature from 'ol/Feature'
 import Point from 'ol/geom/Point'
 import LineString from 'ol/geom/LineString'
 import { fromLonLat } from 'ol/proj'
 import { Circle as CircleStyle, Fill, Icon, Stroke, Style } from 'ol/style'
 import type { PositionDto } from '@/api/machineApi'
+
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN ?? ''
+const MAPBOX_XYZ_URL = `https://api.mapbox.com/styles/v1/noneofus/cj79irz8w86xm2qtkehmw9r6b/tiles/256/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`
 
 const props = defineProps<{
   currentPosition: PositionDto | null
@@ -20,6 +24,7 @@ const props = defineProps<{
 }>()
 
 const mapEl = ref<HTMLDivElement>()
+const basemap = ref<'osm' | 'mapbox'>('mapbox')
 const popup = ref<{
   time: string
   lat: string
@@ -33,9 +38,19 @@ const popup = ref<{
 const popupStyle = ref({ top: '0px', left: '0px' })
 
 let map: Map
+let baseLayer: TileLayer
 let vectorSource: VectorSource
 
-// Icône tracteur SVG encodée en data URL
+function buildMapboxSource() {
+  return new XYZ({ url: MAPBOX_XYZ_URL, tileSize: 256, crossOrigin: 'anonymous' })
+}
+
+function toggleBasemap() {
+  basemap.value = basemap.value === 'osm' ? 'mapbox' : 'osm'
+  baseLayer.setSource(basemap.value === 'osm' ? new OSM() : buildMapboxSource())
+}
+
+// Icône tracteur SVG
 const tractorSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="40" height="40">
   <circle cx="20" cy="44" r="14" fill="none" stroke="#4ade80" stroke-width="3"/>
   <circle cx="20" cy="44" r="5" fill="#4ade80"/>
@@ -58,12 +73,11 @@ const trackStyle = new Style({ stroke: new Stroke({ color: '#3b82f6', width: 2, 
 
 onMounted(() => {
   vectorSource = new VectorSource()
+  baseLayer = new TileLayer({ source: buildMapboxSource() })
+
   map = new Map({
     target: mapEl.value,
-    layers: [
-      new TileLayer({ source: new OSM() }),
-      new VectorLayer({ source: vectorSource }),
-    ],
+    layers: [baseLayer, new VectorLayer({ source: vectorSource })],
     view: new View({ center: fromLonLat([2.5, 46.5]), zoom: 6 }),
   })
 
@@ -172,6 +186,9 @@ function zoomToExtent() {
     <div class="map-controls">
       <button class="map-btn" :disabled="!currentPosition" title="Centrer sur le tracteur" @click="zoomToTractor">🚜</button>
       <button class="map-btn" title="Zoom sur l'emprise" @click="zoomToExtent">⛶</button>
+      <button class="map-btn basemap-btn" :class="{ active: basemap === 'mapbox' }" title="Changer de fond de carte" @click="toggleBasemap">
+        {{ basemap === 'osm' ? 'Sat' : 'OSM' }}
+      </button>
     </div>
   </div>
 </template>
@@ -204,6 +221,8 @@ function zoomToExtent() {
 }
 .map-btn:hover:not(:disabled) { background: rgba(55, 65, 81, 0.95); }
 .map-btn:disabled { opacity: 0.35; cursor: default; }
+.basemap-btn { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.03em; }
+.basemap-btn.active { border-color: #3b82f6; color: #93c5fd; }
 
 .map-popup {
   position: absolute;

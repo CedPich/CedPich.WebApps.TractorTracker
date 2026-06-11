@@ -33,6 +33,7 @@ services:
       dockerfile: Dockerfile
       args:
         - VITE_API_URL=
+        - VITE_MAPBOX_TOKEN=${VITE_MAPBOX_TOKEN:-}
     container_name: tractortracker-frontend
     restart: unless-stopped
     environment:
