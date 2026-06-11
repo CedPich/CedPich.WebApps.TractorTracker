@@ -19,7 +19,16 @@ const props = defineProps<{
 }>()
 
 const mapEl = ref<HTMLDivElement>()
-const popup = ref<{ time: string; lat: string; lng: string } | null>(null)
+const popup = ref<{
+  time: string
+  lat: string
+  lng: string
+  speed: string | null
+  heading: string | null
+  altitude: string | null
+  satellites: number | null
+  address: string | null
+} | null>(null)
 const popupStyle = ref({ top: '0px', left: '0px' })
 
 let map: Map
@@ -66,6 +75,11 @@ onMounted(() => {
           time: new Date(data.recordedAt).toLocaleString('fr-FR'),
           lat: data.latitude.toFixed(6),
           lng: data.longitude.toFixed(6),
+          speed: data.speedKmh != null ? `${data.speedKmh.toFixed(1)} km/h` : null,
+          heading: data.headingDegrees != null ? `${Math.round(data.headingDegrees)}°` : null,
+          altitude: data.altitudeMeters != null ? `${Math.round(data.altitudeMeters)} m` : null,
+          satellites: data.satellites ?? null,
+          address: data.formattedAddress ?? null,
         }
         popupStyle.value = { top: `${(evt.pixel[1] ?? 0) + 12}px`, left: `${(evt.pixel[0] ?? 0) + 12}px` }
         return
@@ -136,6 +150,13 @@ function zoomToExtent() {
     <div v-if="popup" class="map-popup" :style="popupStyle">
       <div class="popup-time">{{ popup.time }}</div>
       <div class="popup-coords">{{ popup.lat }}, {{ popup.lng }}</div>
+      <div v-if="popup.address" class="popup-address">{{ popup.address }}</div>
+      <div class="popup-meta">
+        <span v-if="popup.altitude">⛰ {{ popup.altitude }}</span>
+        <span v-if="popup.speed">⚡ {{ popup.speed }}</span>
+        <span v-if="popup.heading">🧭 {{ popup.heading }}</span>
+        <span v-if="popup.satellites != null">🛰 {{ popup.satellites }}</span>
+      </div>
     </div>
     <div class="map-controls">
       <button class="map-btn" :disabled="!currentPosition" title="Centrer sur le tracteur" @click="zoomToTractor">🚜</button>
@@ -185,4 +206,6 @@ function zoomToExtent() {
 }
 .popup-time { font-size: 0.85rem; color: #f3f4f6; font-weight: 500; }
 .popup-coords { font-size: 0.75rem; color: #9ca3af; margin-top: 2px; }
+.popup-address { font-size: 0.75rem; color: #d1d5db; margin-top: 4px; max-width: 240px; white-space: normal; line-height: 1.3; }
+.popup-meta { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 4px; font-size: 0.75rem; color: #9ca3af; }
 </style>

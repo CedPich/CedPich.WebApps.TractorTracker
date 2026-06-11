@@ -13,7 +13,8 @@ public class GetPositionHistory(IPositionRepository positions)
     {
         var records = await positions.GetHistoryAsync(machineId, from, to, ct);
         return records
-            .Select(r => new PositionDto(r.Latitude, r.Longitude, r.RecordedAt, r.SpeedKmh, r.HeadingDegrees))
+            .Select(r => new PositionDto(r.Latitude, r.Longitude, r.RecordedAt,
+                r.SpeedKmh, r.HeadingDegrees, r.AltitudeMeters, r.Satellites, r.FormattedAddress))
             .ToList();
     }
 }

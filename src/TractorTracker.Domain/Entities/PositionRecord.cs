@@ -7,19 +7,33 @@ public class PositionRecord
     public long Id { get; private set; }
     public Guid MachineId { get; private set; }
     public Point Location { get; private set; } = null!;
+    public DateTimeOffset RecordedAt { get; private set; }
     public double? SpeedKmh { get; private set; }
     public double? HeadingDegrees { get; private set; }
-    public DateTimeOffset RecordedAt { get; private set; }
+    public double? AltitudeMeters { get; private set; }
+    public int? Satellites { get; private set; }
+    public string? FormattedAddress { get; private set; }
 
     private PositionRecord() { }
 
-    public PositionRecord(Guid machineId, Point location, DateTimeOffset recordedAt, double? speedKmh = null, double? headingDegrees = null)
+    public PositionRecord(
+        Guid machineId,
+        Point location,
+        DateTimeOffset recordedAt,
+        double? speedKmh = null,
+        double? headingDegrees = null,
+        double? altitudeMeters = null,
+        int? satellites = null,
+        string? formattedAddress = null)
     {
         MachineId = machineId;
         Location = location;
         RecordedAt = recordedAt;
         SpeedKmh = speedKmh;
         HeadingDegrees = headingDegrees;
+        AltitudeMeters = altitudeMeters;
+        Satellites = satellites;
+        FormattedAddress = formattedAddress;
     }
 
     public double Latitude => Location.Y;

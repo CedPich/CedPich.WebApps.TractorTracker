@@ -7,9 +7,10 @@ public class GetCurrentPosition(IPositionRepository positions)
 {
     public async Task<PositionDto?> ExecuteAsync(Guid machineId, CancellationToken ct = default)
     {
-        var record = await positions.GetLatestAsync(machineId, ct);
-        if (record is null) return null;
+        var r = await positions.GetLatestAsync(machineId, ct);
+        if (r is null) return null;
 
-        return new PositionDto(record.Latitude, record.Longitude, record.RecordedAt, record.SpeedKmh, record.HeadingDegrees);
+        return new PositionDto(r.Latitude, r.Longitude, r.RecordedAt,
+            r.SpeedKmh, r.HeadingDegrees, r.AltitudeMeters, r.Satellites, r.FormattedAddress);
     }
 }

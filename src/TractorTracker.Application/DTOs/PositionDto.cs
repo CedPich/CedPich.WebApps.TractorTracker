@@ -5,7 +5,10 @@ public record PositionDto(
     double Longitude,
     DateTimeOffset RecordedAt,
     double? SpeedKmh,
-    double? HeadingDegrees);
+    double? HeadingDegrees,
+    double? AltitudeMeters,
+    int? Satellites,
+    string? FormattedAddress);
 
 public record DailyWorkHoursDto(
     DateOnly Date,

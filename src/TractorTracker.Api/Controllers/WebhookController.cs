@@ -63,13 +63,18 @@ public class WebhookController(
         var ev = payload.Event;
 
         var threshold = TimeSpan.FromHours(options.Value.InactivityThresholdHours);
-        var lastAt = await positions.GetLastRecordedAtAsync(machine.Id, ct);
+        var lastAt = payload.LastLocation?.Timestamp ?? await positions.GetLastRecordedAtAsync(machine.Id, ct);
         var isResumingAfterInactivity = lastAt is null || (ev.Timestamp - lastAt.Value) >= threshold;
 
         var record = new PositionRecord(
             machine.Id,
             GeoFactory.CreatePoint(new Coordinate(ev.Longitude, ev.Latitude)),
-            ev.Timestamp);
+            ev.Timestamp,
+            speedKmh: ev.Speed,
+            headingDegrees: ev.Angle,
+            altitudeMeters: ev.Altitude,
+            satellites: ev.Satellites,
+            formattedAddress: ev.FormattedAddress);
 
         await positions.AddRangeAsync([record], ct);
         await positions.SaveChangesAsync(ct);
@@ -90,7 +95,8 @@ public class WebhookController(
 public record TicatagWebhookPayload(
     [property: JsonPropertyName("hook_event")] string HookEvent,
     [property: JsonPropertyName("device")] TicatagDevice? Device,
-    [property: JsonPropertyName("event")] TicatagLocationEvent Event);
+    [property: JsonPropertyName("event")] TicatagLocationEvent Event,
+    [property: JsonPropertyName("last_location")] TicatagLastLocation? LastLocation);
 
 public record TicatagDevice(
     [property: JsonPropertyName("name")] string Name,
@@ -100,5 +106,11 @@ public record TicatagLocationEvent(
     [property: JsonPropertyName("latitude")] double Latitude,
     [property: JsonPropertyName("longitude")] double Longitude,
     [property: JsonPropertyName("timestamp")] DateTimeOffset Timestamp,
-    [property: JsonPropertyName("accuracy")] double? Accuracy,
+    [property: JsonPropertyName("altitude")] double? Altitude,
+    [property: JsonPropertyName("satellites")] int? Satellites,
+    [property: JsonPropertyName("speed")] double? Speed,
+    [property: JsonPropertyName("angle")] double? Angle,
     [property: JsonPropertyName("formatted_address")] string? FormattedAddress);
+
+public record TicatagLastLocation(
+    [property: JsonPropertyName("timestamp")] DateTimeOffset Timestamp);

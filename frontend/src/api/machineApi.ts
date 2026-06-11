@@ -10,6 +10,9 @@ export interface PositionDto {
   recordedAt: string
   speedKmh: number | null
   headingDegrees: number | null
+  altitudeMeters: number | null
+  satellites: number | null
+  formattedAddress: string | null
 }
 
 export interface DailyWorkHoursDto {
