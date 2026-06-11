@@ -106,7 +106,11 @@ function updateFeatures() {
     tractor.setStyle(tractorIcon)
     tractor.set('pointData', props.currentPosition)
     vectorSource.addFeature(tractor)
-    map.getView().animate({ center: coord, zoom: 14, duration: 500 })
+  }
+
+  const extent = vectorSource.getExtent()
+  if (isFinite(extent[0])) {
+    map.getView().fit(extent, { padding: [48, 48, 48, 48], maxZoom: 17, duration: 500 })
   }
 }
 </script>
