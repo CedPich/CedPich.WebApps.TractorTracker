@@ -5,8 +5,9 @@ Suivi GPS d'un tracteur via un tracker Ticatag. Affiche la position actuelle, l'
 ## Fonctionnalités
 
 - **Position actuelle** — mise à jour en temps réel via webhook Ticatag
-- **Historique** — tracé des déplacements sur carte OpenLayers, filtrable par intervalle de dates
+- **Historique** — tracé des déplacements sur carte OpenLayers, filtrable par journée (sliders 15 min) ou intervalle de dates
 - **Heures travaillées** — graphique bar Chart.js des heures par jour
+- **Notifications push** — alerte navigateur dès que le tracteur reprend du service après 4h d'inactivité
 
 ## Stack technique
 
@@ -126,7 +127,17 @@ Variables requises en production :
 | `DB_NAME` | Nom de la base de données |
 | `DB_USER` | Utilisateur PostgreSQL dédié |
 | `DB_PASSWORD` | Mot de passe PostgreSQL |
-| `MACHINE_ID` | UUID de la machine en base |
+| `VAPID_SUBJECT` | Email de contact VAPID, ex. `mailto:ton@email.fr` |
+| `VAPID_PUBLIC_KEY` | Clé publique VAPID (générer ci-dessous) |
+| `VAPID_PRIVATE_KEY` | Clé privée VAPID (générer ci-dessous) |
+
+**Générer les clés VAPID (une seule fois, ne jamais les changer ensuite) :**
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+Copier les deux clés dans le `.env`. Si elles sont régénérées, toutes les souscriptions push existantes deviennent invalides.
 
 ```bash
 # 3. Build et démarrage
@@ -161,6 +172,20 @@ Dans l'interface Ticatag, configurer le webhook avec :
 - **URL** : `https://tracker.ton-domaine.fr/api/webhook/ticatag`
 - **Méthode** : `POST`
 - **Événement** : `location_changed`
+
+## Notifications push
+
+Les notifications sont envoyées automatiquement au navigateur lorsque le tracteur reprend du service après plus de 4h d'inactivité.
+
+Pour les recevoir, ouvrir le dashboard depuis le navigateur cible et accepter la demande de permission. La souscription est alors enregistrée en base.
+
+Pour vérifier que la clé VAPID est bien exposée :
+
+```bash
+curl https://tracker.ton-domaine.fr/api/push/vapid-public-key
+```
+
+> Les notifications push nécessitent HTTPS. Elles ne fonctionnent pas en développement local sans configuration particulière.
 
 ## Ajouter la machine en base
 
