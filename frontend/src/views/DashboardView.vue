@@ -10,6 +10,7 @@ const store = useMachineStore()
 
 const mapFrom = ref('')
 const mapTo = ref('')
+const mapLive = ref(false)
 
 const workFrom = ref(new Date(Date.now() - 86400000 * 30))
 const workTo = ref(new Date())
@@ -43,9 +44,9 @@ onMounted(() => {
     <div v-if="store.error" class="error">{{ store.error }}</div>
 
     <section class="map-section">
-      <MapFilters @change="onMapFilterChange" />
+      <MapFilters @change="onMapFilterChange" @live-change="live => mapLive = live" />
       <div class="map-wrapper">
-        <TrackerMap :current-position="store.currentPosition" :history="store.history" />
+        <TrackerMap :current-position="store.currentPosition" :history="store.history" :live="mapLive" />
         <div v-if="store.currentPosition" class="position-info">
           <strong>Position actuelle</strong>
           <span>{{ store.currentPosition.latitude.toFixed(5) }}, {{ store.currentPosition.longitude.toFixed(5) }}</span>

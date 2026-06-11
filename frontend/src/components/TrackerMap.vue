@@ -16,6 +16,7 @@ import type { PositionDto } from '@/api/machineApi'
 const props = defineProps<{
   currentPosition: PositionDto | null
   history: PositionDto[]
+  live?: boolean
 }>()
 
 const mapEl = ref<HTMLDivElement>()
@@ -93,7 +94,16 @@ onMounted(() => {
 
 onUnmounted(() => map?.setTarget(undefined))
 
-watch(() => [props.currentPosition, props.history], updateFeatures, { deep: true })
+// En mode live : suivi de position sans changer le zoom
+watch(() => props.currentPosition, (pos) => {
+  if (!props.live || !pos || !map) return
+  map.getView().animate({
+    center: fromLonLat([pos.longitude, pos.latitude]),
+    duration: 400,
+  })
+})
+
+watch(() => [props.history], updateFeatures, { deep: true })
 
 function updateFeatures() {
   if (!vectorSource) return
@@ -122,9 +132,10 @@ function updateFeatures() {
     vectorSource.addFeature(tractor)
   }
 
-  const extent = vectorSource.getExtent()
-  if (isFinite(extent[0])) {
-    map.getView().fit(extent, { padding: [48, 48, 48, 48], maxZoom: 17, duration: 500 })
+  if (!props.live) {
+    const extent = vectorSource.getExtent()
+    if (isFinite(extent[0]))
+      map.getView().fit(extent, { padding: [48, 48, 48, 48], maxZoom: 17, duration: 500 })
   }
 }
 

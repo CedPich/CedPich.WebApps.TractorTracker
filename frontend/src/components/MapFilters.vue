@@ -3,7 +3,7 @@ import { ref, computed, watch, onUnmounted } from 'vue'
 
 type Mode = 'day' | 'range'
 
-const emit = defineEmits<{ change: [from: string, to: string] }>()
+const emit = defineEmits<{ change: [from: string, to: string]; liveChange: [live: boolean] }>()
 
 const mode = ref<Mode>('day')
 
@@ -38,6 +38,7 @@ function stopLive() {
 
 function toggleLive() {
   liveMode.value = !liveMode.value
+  emit('liveChange', liveMode.value)
   if (liveMode.value) {
     liveInterval = setInterval(() => emit('change', from.value, new Date().toISOString()), 30_000)
   } else {
@@ -50,6 +51,7 @@ watch(isToday, (val) => {
   if (!val && liveMode.value) {
     liveMode.value = false
     stopLive()
+    emit('liveChange', false)
   }
 })
 
