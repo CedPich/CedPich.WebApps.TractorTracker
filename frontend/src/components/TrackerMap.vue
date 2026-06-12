@@ -56,11 +56,11 @@ const tractorSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" 
   <circle cx="20" cy="44" r="5" fill="#4ade80"/>
   <circle cx="50" cy="48" r="8" fill="none" stroke="#4ade80" stroke-width="3"/>
   <circle cx="50" cy="48" r="3" fill="#4ade80"/>
-  <rect x="18" y="34" width="34" height="10" rx="2" fill="#16a34a"/>
-  <rect x="30" y="20" width="20" height="16" rx="2" fill="#15803d"/>
-  <rect x="33" y="23" width="14" height="9" rx="1" fill="#111827" opacity="0.8"/>
-  <rect x="14" y="28" width="18" height="8" rx="2" fill="#166534"/>
-  <rect x="24" y="18" width="3" height="10" rx="1" fill="#4ade80"/>
+  <rect x="12" y="34" width="34" height="10" rx="2" fill="#16a34a"/>
+  <rect x="14" y="20" width="20" height="16" rx="2" fill="#15803d"/>
+  <rect x="17" y="23" width="14" height="9" rx="1" fill="#111827" opacity="0.8"/>
+  <rect x="32" y="28" width="18" height="8" rx="2" fill="#166534"/>
+  <rect x="37" y="18" width="3" height="10" rx="1" fill="#4ade80"/>
 </svg>`
 const tractorIcon = new Style({
   image: new Icon({ src: `data:image/svg+xml;utf8,${encodeURIComponent(tractorSvg)}`, anchor: [0.5, 0.85] }),
@@ -108,16 +108,12 @@ onMounted(() => {
 
 onUnmounted(() => map?.setTarget(undefined))
 
-// En mode live : suivi de position sans changer le zoom
-watch(() => props.currentPosition, (pos) => {
-  if (!props.live || !pos || !map) return
-  map.getView().animate({
-    center: fromLonLat([pos.longitude, pos.latitude]),
-    duration: 400,
-  })
-})
-
-watch(() => [props.history], updateFeatures, { deep: true })
+watch(() => [props.currentPosition, props.history] as const, ([pos, _], [oldPos]) => {
+  updateFeatures()
+  // En mode live : suivi de position sans changer le zoom
+  if (props.live && pos && pos !== oldPos && map)
+    map.getView().animate({ center: fromLonLat([pos.longitude, pos.latitude]), duration: 400 })
+}, { deep: true })
 
 function updateFeatures() {
   if (!vectorSource) return

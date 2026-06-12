@@ -63,30 +63,41 @@ onMounted(() => {
       </div>
     </section>
 
-    <SettingsPanel @change="onSettingsChange" />
+    <div class="bottom-row">
+      <SettingsPanel @change="onSettingsChange" />
 
-    <section class="chart-section">
-      <div class="chart-header">
-        <h2>Heures travaillées par jour</h2>
-        <div class="chart-filters">
-          <label>Du <input type="date" :value="toIso(workFrom)" @change="e => { const v = (e.target as HTMLInputElement).value; if (v) { workFrom = new Date(v); refreshWorkHours() } }" /></label>
-          <label>Au <input type="date" :value="toIso(workTo)" @change="e => { const v = (e.target as HTMLInputElement).value; if (v) { workTo = new Date(v); refreshWorkHours() } }" /></label>
+      <section class="chart-section">
+        <div class="chart-header">
+          <h2>Heures travaillées par jour</h2>
+          <div class="chart-filters">
+            <label>Du <input type="date" :value="toIso(workFrom)" @change="e => { const v = (e.target as HTMLInputElement).value; if (v) { workFrom = new Date(v); refreshWorkHours() } }" /></label>
+            <label>Au <input type="date" :value="toIso(workTo)" @change="e => { const v = (e.target as HTMLInputElement).value; if (v) { workTo = new Date(v); refreshWorkHours() } }" /></label>
+          </div>
         </div>
-      </div>
-      <WorkHoursChart v-if="store.workHours.length" :data="store.workHours" />
-      <p v-else-if="!store.loading">Aucune donnée sur la période.</p>
-    </section>
+        <div class="chart-wrapper">
+          <WorkHoursChart v-if="store.workHours.length" :data="store.workHours" />
+          <p v-else-if="!store.loading">Aucune donnée sur la période.</p>
+        </div>
+      </section>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.dashboard { display: flex; flex-direction: column; gap: 1.5rem; padding: 1rem; }
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  height: 100%;
+  overflow: hidden;
+}
 
-.dashboard-header { border-bottom: 1px solid #374151; padding-bottom: 0.75rem; }
-.dashboard-header h1 { margin: 0; font-size: 1.5rem; color: #f9fafb; }
+.dashboard-header { border-bottom: 1px solid #374151; padding-bottom: 0.5rem; flex-shrink: 0; }
+.dashboard-header h1 { margin: 0; font-size: 1.25rem; color: #f9fafb; }
 
-.map-section { display: flex; flex-direction: column; gap: 0.75rem; }
-.map-wrapper { position: relative; height: 450px; border-radius: 8px; overflow: hidden; border: 1px solid #374151; }
+.map-section { display: flex; flex-direction: column; gap: 0.5rem; flex: 1; min-height: 0; }
+.map-wrapper { position: relative; flex: 1; min-height: 0; border-radius: 8px; overflow: hidden; border: 1px solid #374151; }
 
 .position-info {
   position: absolute; top: 0.75rem; right: 0.75rem;
@@ -96,9 +107,19 @@ onMounted(() => {
   font-size: 0.85rem; border: 1px solid #374151;
 }
 
-.chart-section { padding: 1rem; background: #1f2937; border-radius: 8px; border: 1px solid #374151; }
-.chart-header { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
-.chart-header h2 { font-size: 1rem; color: #d1d5db; margin: 0; }
+/* Desktop : settings + graphique côte à côte */
+.bottom-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: stretch;
+  flex-shrink: 0;
+}
+.bottom-row > :first-child { flex-shrink: 0; width: 220px; }
+.bottom-row > .chart-section { flex: 1; min-width: 0; }
+
+.chart-section { padding: 0.75rem 1rem; background: #1f2937; border-radius: 8px; border: 1px solid #374151; display: flex; flex-direction: column; }
+.chart-header { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.4rem; flex-shrink: 0; }
+.chart-header h2 { font-size: 0.9rem; color: #d1d5db; margin: 0; }
 .chart-filters { display: flex; gap: 0.75rem; flex-wrap: wrap; }
 .chart-filters label { display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; color: #9ca3af; }
 .chart-filters input[type="date"] {
@@ -106,7 +127,17 @@ onMounted(() => {
   border: 1px solid #374151; border-radius: 4px;
   padding: 0.2rem 0.4rem; font-size: 0.8rem;
 }
+.chart-wrapper { flex: 1; min-height: 120px; }
 
-.chart-section p { color: #6b7280; }
-.error { color: #fca5a5; padding: 0.5rem; background: #450a0a; border-radius: 4px; }
+.chart-section p { color: #6b7280; font-size: 0.85rem; }
+.error { color: #fca5a5; padding: 0.5rem; background: #450a0a; border-radius: 4px; flex-shrink: 0; }
+
+/* Mobile : settings et graphique empilés */
+@media (max-width: 640px) {
+  .dashboard { overflow: auto; height: auto; }
+  .map-wrapper { height: 300px; flex: none; }
+  .bottom-row { flex-direction: column; }
+  .bottom-row > :first-child { width: 100%; }
+  .chart-wrapper { min-height: 200px; }
+}
 </style>
