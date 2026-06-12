@@ -28,10 +28,10 @@ export const useMachineStore = defineStore('machine', () => {
     }
   }
 
-  async function fetchWorkHours(from: string, to: string) {
+  async function fetchWorkHours(from: string, to: string, pauseThresholdMinutes = 15) {
     loading.value = true
     try {
-      workHours.value = await machineApi.getWorkHours(from, to)
+      workHours.value = await machineApi.getWorkHours(from, to, pauseThresholdMinutes)
     } catch {
       error.value = 'Impossible de récupérer les heures travaillées.'
     } finally {

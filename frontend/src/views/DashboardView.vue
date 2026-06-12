@@ -5,6 +5,8 @@ import TrackerMap from '@/components/TrackerMap.vue'
 import WorkHoursChart from '@/components/WorkHoursChart.vue'
 import MapFilters from '@/components/MapFilters.vue'
 import { registerPushNotifications } from '@/composables/usePushNotifications'
+import SettingsPanel from '@/components/SettingsPanel.vue'
+import type { AppSettings } from '@/components/SettingsPanel.vue'
 
 const store = useMachineStore()
 
@@ -14,6 +16,7 @@ const mapLive = ref(false)
 
 const workFrom = ref(new Date(Date.now() - 86400000 * 30))
 const workTo = ref(new Date())
+const pauseThresholdMinutes = ref(15)
 function toIso(d: Date): string { return d.toISOString().substring(0, 10) }
 
 async function onMapFilterChange(from: string, to: string) {
@@ -26,7 +29,12 @@ async function onMapFilterChange(from: string, to: string) {
 }
 
 async function refreshWorkHours() {
-  await store.fetchWorkHours(toIso(workFrom.value), toIso(workTo.value))
+  await store.fetchWorkHours(toIso(workFrom.value), toIso(workTo.value), pauseThresholdMinutes.value)
+}
+
+function onSettingsChange(s: AppSettings) {
+  pauseThresholdMinutes.value = s.pauseThresholdMinutes
+  refreshWorkHours()
 }
 
 onMounted(() => {
@@ -54,6 +62,8 @@ onMounted(() => {
         </div>
       </div>
     </section>
+
+    <SettingsPanel @change="onSettingsChange" />
 
     <section class="chart-section">
       <div class="chart-header">

@@ -37,10 +37,13 @@ public class MachinesController(
     public async Task<ActionResult<IReadOnlyList<DailyWorkHoursDto>>> GetWorkHours(
         [FromQuery] DateOnly from,
         [FromQuery] DateOnly to,
-        CancellationToken ct)
+        [FromQuery] int pauseThresholdMinutes = 15,
+        CancellationToken ct = default)
     {
         if (from > to) return BadRequest("'from' must be before or equal to 'to'.");
-        var result = await getDailyWorkHours.ExecuteAsync(MachineId, from, to, ct);
+        if (pauseThresholdMinutes < 1) return BadRequest("'pauseThresholdMinutes' must be at least 1.");
+        var result = await getDailyWorkHours.ExecuteAsync(
+            MachineId, from, to, TimeSpan.FromMinutes(pauseThresholdMinutes), ct);
         return Ok(result);
     }
 }

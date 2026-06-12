@@ -9,10 +9,11 @@ public class GetDailyWorkHours(IPositionRepository positions)
         Guid machineId,
         DateOnly from,
         DateOnly to,
+        TimeSpan pauseThreshold,
         CancellationToken ct = default)
     {
         var start = new DateTimeOffset(from.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
-        var end = new DateTimeOffset(to.ToDateTime(TimeOnly.MaxValue), TimeSpan.Zero);
+        var end   = new DateTimeOffset(to.ToDateTime(TimeOnly.MaxValue), TimeSpan.Zero);
 
         var records = await positions.GetHistoryAsync(machineId, start, end, ct);
 
@@ -22,10 +23,17 @@ public class GetDailyWorkHours(IPositionRepository positions)
             .Select(g =>
             {
                 var ordered = g.OrderBy(r => r.RecordedAt).ToList();
-                var span = ordered.Count > 1
-                    ? (ordered.Last().RecordedAt - ordered.First().RecordedAt).TotalHours
-                    : 0;
-                return new DailyWorkHoursDto(g.Key, Math.Round(span, 2), ordered.Count);
+
+                // Somme des intervalles entre points consécutifs, hors pauses
+                var activeHours = 0.0;
+                for (var i = 1; i < ordered.Count; i++)
+                {
+                    var gap = ordered[i].RecordedAt - ordered[i - 1].RecordedAt;
+                    if (gap <= pauseThreshold)
+                        activeHours += gap.TotalHours;
+                }
+
+                return new DailyWorkHoursDto(g.Key, Math.Round(activeHours, 2), ordered.Count);
             })
             .ToList();
     }

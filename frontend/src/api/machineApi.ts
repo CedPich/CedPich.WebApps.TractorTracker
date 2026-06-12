@@ -28,6 +28,6 @@ export const machineApi = {
   getHistory: (from: string, to: string) =>
     http.get<PositionDto[]>('/api/machine/history', { params: { from, to } }).then(r => r.data),
 
-  getWorkHours: (from: string, to: string) =>
-    http.get<DailyWorkHoursDto[]>('/api/machine/work-hours', { params: { from, to } }).then(r => r.data),
+  getWorkHours: (from: string, to: string, pauseThresholdMinutes: number) =>
+    http.get<DailyWorkHoursDto[]>('/api/machine/work-hours', { params: { from, to, pauseThresholdMinutes } }).then(r => r.data),
 }
