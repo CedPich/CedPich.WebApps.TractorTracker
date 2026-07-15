@@ -11,8 +11,10 @@ import Feature from 'ol/Feature'
 import Point from 'ol/geom/Point'
 import LineString from 'ol/geom/LineString'
 import { fromLonLat } from 'ol/proj'
-import { Circle as CircleStyle, Fill, Icon, Stroke, Style } from 'ol/style'
+import { Circle as CircleStyle, Fill, Icon, RegularShape, Stroke, Style } from 'ol/style'
 import type { PositionDto } from '@/api/machineApi'
+
+type TraceStyle = 'line' | 'arrows' | 'speed'
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN ?? ''
 const MAPBOX_XYZ_URL = `https://api.mapbox.com/styles/v1/noneofus/cj79irz8w86xm2qtkehmw9r6b/tiles/256/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`
@@ -25,6 +27,7 @@ const props = defineProps<{
 
 const mapEl = ref<HTMLDivElement>()
 const basemap = ref<'osm' | 'mapbox'>('mapbox')
+const traceStyle = ref<TraceStyle>('line')
 const popup = ref<{
   time: string
   lat: string
@@ -66,10 +69,47 @@ const tractorIcon = new Style({
   image: new Icon({ src: `data:image/svg+xml;utf8,${encodeURIComponent(tractorSvg)}`, anchor: [0.5, 0.85] }),
 })
 
-const historyPointStyle = new Style({
-  image: new CircleStyle({ radius: 4, fill: new Fill({ color: '#3b82f6' }), stroke: new Stroke({ color: '#1e3a5f', width: 1 }) }),
-})
-const trackStyle = new Style({ stroke: new Stroke({ color: '#3b82f6', width: 2, lineDash: [4, 4] }) })
+// Speed color ramp: 0 km/h=blue, 5=green, 10=yellow, 15+=red
+const SPEED_STOPS = [
+  { v: 0,  r: 59,  g: 130, b: 246 },
+  { v: 5,  r: 34,  g: 197, b: 94  },
+  { v: 10, r: 234, g: 179, b: 8   },
+  { v: 15, r: 239, g: 68,  b: 68  },
+]
+function speedColor(speed: number | null): string {
+  const s = speed ?? 0
+  if (s <= SPEED_STOPS[0].v) return `rgb(${SPEED_STOPS[0].r},${SPEED_STOPS[0].g},${SPEED_STOPS[0].b})`
+  const last = SPEED_STOPS[SPEED_STOPS.length - 1]
+  if (s >= last.v) return `rgb(${last.r},${last.g},${last.b})`
+  for (let i = 0; i < SPEED_STOPS.length - 1; i++) {
+    const a = SPEED_STOPS[i], b = SPEED_STOPS[i + 1]
+    if (s >= a.v && s <= b.v) {
+      const t = (s - a.v) / (b.v - a.v)
+      return `rgb(${Math.round(a.r + t * (b.r - a.r))},${Math.round(a.g + t * (b.g - a.g))},${Math.round(a.b + t * (b.b - a.b))})`
+    }
+  }
+  return '#3b82f6'
+}
+
+function segmentBearing(a: number[], b: number[]): number {
+  return Math.atan2(b[1] - a[1], b[0] - a[0])
+}
+
+function makeSegmentStyle(color: string, dashed: boolean): Style {
+  return new Style({ stroke: new Stroke({ color, width: 2, lineDash: dashed ? [4, 4] : undefined }) })
+}
+
+function makeArrowStyle(color: string, angle: number): Style {
+  return new Style({
+    image: new RegularShape({
+      points: 3,
+      radius: 6,
+      fill: new Fill({ color }),
+      rotation: -angle + Math.PI / 2,
+    }),
+    geometry: undefined,
+  })
+}
 
 onMounted(() => {
   vectorSource = new VectorSource()
@@ -120,17 +160,47 @@ function updateFeatures() {
   vectorSource.clear()
   popup.value = null
 
-  if (props.history.length > 1) {
-    const coords = props.history.map(p => fromLonLat([p.longitude, p.latitude]))
-    const line = new Feature(new LineString(coords))
-    line.setStyle(trackStyle)
-    vectorSource.addFeature(line)
+  const style = traceStyle.value
 
-    for (const p of props.history) {
-      const f = new Feature(new Point(fromLonLat([p.longitude, p.latitude])))
-      f.setStyle(historyPointStyle)
-      f.set('pointData', p)
-      vectorSource.addFeature(f)
+  if (props.history.length > 0) {
+    const pts = props.history.map(p => ({ coord: fromLonLat([p.longitude, p.latitude]), data: p }))
+
+    if (style === 'line') {
+      if (pts.length > 1) {
+        const line = new Feature(new LineString(pts.map(p => p.coord)))
+        line.setStyle(new Style({ stroke: new Stroke({ color: '#3b82f6', width: 2, lineDash: [4, 4] }) }))
+        vectorSource.addFeature(line)
+      }
+      for (const { coord, data } of pts) {
+        const f = new Feature(new Point(coord))
+        f.setStyle(new Style({ image: new CircleStyle({ radius: 4, fill: new Fill({ color: '#3b82f6' }), stroke: new Stroke({ color: '#1e3a5f', width: 1 }) }) }))
+        f.set('pointData', data)
+        vectorSource.addFeature(f)
+      }
+    } else {
+      // arrows or speed: draw per-segment
+      for (let i = 0; i < pts.length - 1; i++) {
+        const a = pts[i].coord, b = pts[i + 1].coord
+        const color = style === 'speed' ? speedColor(pts[i + 1].data.speedKmh) : '#3b82f6'
+        const segFeature = new Feature(new LineString([a, b]))
+        segFeature.setStyle(makeSegmentStyle(color, style !== 'speed'))
+        vectorSource.addFeature(segFeature)
+
+        // Arrow at midpoint
+        const mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2] as [number, number]
+        const angle = segmentBearing(a, b)
+        const arrow = new Feature(new Point(mid))
+        arrow.setStyle(makeArrowStyle(color, angle))
+        vectorSource.addFeature(arrow)
+      }
+      // Clickable dot on each point (transparent, just for popup)
+      for (const { coord, data } of pts) {
+        const f = new Feature(new Point(coord))
+        const color = style === 'speed' ? speedColor(data.speedKmh) : '#3b82f6'
+        f.setStyle(new Style({ image: new CircleStyle({ radius: 4, fill: new Fill({ color }), stroke: new Stroke({ color: 'rgba(0,0,0,0.4)', width: 1 }) }) }))
+        f.set('pointData', data)
+        vectorSource.addFeature(f)
+      }
     }
   }
 
@@ -185,6 +255,11 @@ function zoomToExtent() {
       <button class="map-btn basemap-btn" :class="{ active: basemap === 'mapbox' }" title="Changer de fond de carte" @click="toggleBasemap">
         {{ basemap === 'osm' ? 'Sat' : 'OSM' }}
       </button>
+      <div class="trace-style-group" title="Style du tracé">
+        <button class="map-btn trace-btn" :class="{ active: traceStyle === 'line' }" @click="traceStyle = 'line'; updateFeatures()">—</button>
+        <button class="map-btn trace-btn" :class="{ active: traceStyle === 'arrows' }" @click="traceStyle = 'arrows'; updateFeatures()">→</button>
+        <button class="map-btn trace-btn" :class="{ active: traceStyle === 'speed' }" @click="traceStyle = 'speed'; updateFeatures()">≋</button>
+      </div>
     </div>
   </div>
 </template>
@@ -219,6 +294,11 @@ function zoomToExtent() {
 .map-btn:disabled { opacity: 0.35; cursor: default; }
 .basemap-btn { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.03em; }
 .basemap-btn.active { border-color: #3b82f6; color: #93c5fd; }
+
+.trace-style-group { display: flex; flex-direction: column; gap: 0; border: 1px solid #374151; border-radius: 4px; overflow: hidden; }
+.trace-style-group .map-btn { border: none; border-radius: 0; font-size: 0.9rem; font-weight: 700; border-bottom: 1px solid #374151; }
+.trace-style-group .map-btn:last-child { border-bottom: none; }
+.trace-btn.active { background: rgba(59, 130, 246, 0.25); color: #93c5fd; }
 
 .map-popup {
   position: absolute;
