@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useMachineStore } from '@/stores/machineStore'
 import TrackerMap from '@/components/TrackerMap.vue'
 import WorkHoursChart from '@/components/WorkHoursChart.vue'
@@ -7,6 +7,7 @@ import MapFilters from '@/components/MapFilters.vue'
 import { registerPushNotifications } from '@/composables/usePushNotifications'
 import SettingsPanel from '@/components/SettingsPanel.vue'
 import type { AppSettings } from '@/components/SettingsPanel.vue'
+import DatePicker from 'primevue/datepicker'
 
 const store = useMachineStore()
 
@@ -18,6 +19,20 @@ const workFrom = ref(new Date(Date.now() - 86400000 * 30))
 const workTo = ref(new Date())
 const pauseThresholdMinutes = ref(15)
 function toIso(d: Date): string { return d.toISOString().substring(0, 10) }
+
+// Remplit les jours sans données avec 0 heures
+const filledWorkHours = computed(() => {
+  const map = new Map(store.workHours.map(d => [d.date, d.hours]))
+  const result: { date: string; hours: number }[] = []
+  const cur = new Date(workFrom.value); cur.setHours(0, 0, 0, 0)
+  const end = new Date(workTo.value); end.setHours(0, 0, 0, 0)
+  while (cur <= end) {
+    const key = toIso(cur)
+    result.push({ date: key, hours: map.get(key) ?? 0 })
+    cur.setDate(cur.getDate() + 1)
+  }
+  return result
+})
 
 async function onMapFilterChange(from: string, to: string) {
   mapFrom.value = from
@@ -70,12 +85,16 @@ onMounted(() => {
         <div class="chart-header">
           <h2>Heures travaillées par jour</h2>
           <div class="chart-filters">
-            <label>Du <input type="date" :value="toIso(workFrom)" @change="e => { const v = (e.target as HTMLInputElement).value; if (v) { workFrom = new Date(v); refreshWorkHours() } }" /></label>
-            <label>Au <input type="date" :value="toIso(workTo)" @change="e => { const v = (e.target as HTMLInputElement).value; if (v) { workTo = new Date(v); refreshWorkHours() } }" /></label>
+            <label>Du
+              <DatePicker v-model="workFrom" date-format="dd/mm/yy" :max-date="workTo" show-button-bar :manual-input="false" class="dp-compact" @update:model-value="refreshWorkHours" />
+            </label>
+            <label>Au
+              <DatePicker v-model="workTo" date-format="dd/mm/yy" :min-date="workFrom" :max-date="new Date()" show-button-bar :manual-input="false" class="dp-compact" @update:model-value="refreshWorkHours" />
+            </label>
           </div>
         </div>
         <div class="chart-wrapper">
-          <WorkHoursChart v-if="store.workHours.length" :data="store.workHours" />
+          <WorkHoursChart v-if="filledWorkHours.length" :data="filledWorkHours" />
           <p v-else-if="!store.loading">Aucune donnée sur la période.</p>
         </div>
       </section>
@@ -122,10 +141,11 @@ onMounted(() => {
 .chart-header h2 { font-size: 0.9rem; color: #d1d5db; margin: 0; }
 .chart-filters { display: flex; gap: 0.75rem; flex-wrap: wrap; }
 .chart-filters label { display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; color: #9ca3af; }
-.chart-filters input[type="date"] {
+:deep(.dp-compact .p-datepicker-input) {
   background: #111827; color: #f3f4f6;
   border: 1px solid #374151; border-radius: 4px;
-  padding: 0.2rem 0.4rem; font-size: 0.8rem;
+  padding: 0.2rem 0.5rem; font-size: 0.8rem;
+  width: 7rem;
 }
 .chart-wrapper { flex: 1; min-height: 120px; }
 

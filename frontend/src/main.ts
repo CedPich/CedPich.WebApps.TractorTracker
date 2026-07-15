@@ -13,7 +13,20 @@ const app = createApp(App)
 
 app.use(createPinia())
 app.use(router)
-app.use(PrimeVue, { theme: { preset: Aura, options: { darkModeSelector: 'html' } } })
+app.use(PrimeVue, {
+  theme: { preset: Aura, options: { darkModeSelector: 'html' } },
+  locale: {
+    firstDayOfWeek: 1,
+    dayNames: ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'],
+    dayNamesShort: ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'],
+    dayNamesMin: ['Di', 'Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa'],
+    monthNames: ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'],
+    monthNamesShort: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'],
+    today: "Aujourd'hui",
+    clear: 'Effacer',
+    dateFormat: 'dd/mm/yy',
+  },
+})
 document.documentElement.classList.add('dark')
 
 app.mount('#app')

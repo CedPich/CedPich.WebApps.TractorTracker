@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onUnmounted } from 'vue'
+import DatePicker from 'primevue/datepicker'
 
 type Mode = 'day' | 'range'
 
@@ -10,23 +11,26 @@ const mode = ref<Mode>('day')
 // --- Mode journée ---
 const today = new Date()
 function isoDate(d: Date): string { return d.toISOString().substring(0, 10) }
-function daysAgo(n: number): string { const d = new Date(today); d.setDate(d.getDate() - n); return isoDate(d) }
+function dateAgo(n: number): Date { const d = new Date(today); d.setDate(d.getDate() - n); return d }
 
 const todayStr = isoDate(today)
-const selectedDate = ref(todayStr)
+
+const selectedDateObj = ref<Date | null>(new Date(today))
+const selectedDateStr = computed(() => selectedDateObj.value ? isoDate(selectedDateObj.value) : todayStr)
+
 // Minutes depuis minuit, pas de 15, max 1440 (= 00:00 lendemain)
 const startMinutes = ref(0)
 const endMinutes = ref(1440)
 
 const quickDays = [
-  { label: "Aujourd'hui", value: todayStr },
-  { label: 'Hier', value: daysAgo(1) },
-  { label: 'Avant-hier', value: daysAgo(2) },
+  { label: "Aujourd'hui", date: new Date(today), str: todayStr },
+  { label: 'Hier', date: dateAgo(1), str: isoDate(dateAgo(1)) },
+  { label: 'Avant-hier', date: dateAgo(2), str: isoDate(dateAgo(2)) },
 ]
 
 // --- Mode live ---
 const liveMode = ref(false)
-const isToday = computed(() => mode.value === 'day' && selectedDate.value === todayStr)
+const isToday = computed(() => mode.value === 'day' && selectedDateStr.value === todayStr)
 let liveInterval: ReturnType<typeof setInterval> | null = null
 
 function stopLive() {
@@ -58,8 +62,10 @@ watch(isToday, (val) => {
 onUnmounted(stopLive)
 
 // --- Mode intervalle ---
-const rangeFrom = ref(daysAgo(7))
-const rangeTo = ref(todayStr)
+const rangeFromObj = ref<Date | null>(dateAgo(7))
+const rangeToObj = ref<Date | null>(new Date(today))
+const rangeFromStr = computed(() => rangeFromObj.value ? isoDate(rangeFromObj.value) : isoDate(dateAgo(7)))
+const rangeToStr = computed(() => rangeToObj.value ? isoDate(rangeToObj.value) : todayStr)
 
 function localToIsoMinutes(dateStr: string, totalMinutes: number, isEnd: boolean): string {
   const [y, m, d] = dateStr.split('-').map(Number)
@@ -73,15 +79,15 @@ function localToIsoMinutes(dateStr: string, totalMinutes: number, isEnd: boolean
 // --- Calcul from/to ---
 const from = computed(() => {
   if (mode.value === 'day')
-    return localToIsoMinutes(selectedDate.value, startMinutes.value, false)
-  return localToIsoMinutes(rangeFrom.value, 0, false)
+    return localToIsoMinutes(selectedDateStr.value, startMinutes.value, false)
+  return localToIsoMinutes(rangeFromStr.value, 0, false)
 })
 
 const to = computed(() => {
   if (liveMode.value) return new Date().toISOString()
   if (mode.value === 'day')
-    return localToIsoMinutes(selectedDate.value, endMinutes.value, true)
-  return localToIsoMinutes(rangeTo.value, 1440, true)
+    return localToIsoMinutes(selectedDateStr.value, endMinutes.value, true)
+  return localToIsoMinutes(rangeToStr.value, 1440, true)
 })
 
 watch([from, to], () => emit('change', from.value, to.value), { immediate: true })
@@ -105,11 +111,18 @@ function formatMinutes(m: number): string {
       <div class="quick-days">
         <button
           v-for="q in quickDays"
-          :key="q.value"
-          :class="{ active: selectedDate === q.value }"
-          @click="selectedDate = q.value"
+          :key="q.str"
+          :class="{ active: selectedDateStr === q.str }"
+          @click="selectedDateObj = q.date"
         >{{ q.label }}</button>
-        <input type="date" v-model="selectedDate" :max="isoDate(today)" />
+        <DatePicker
+          v-model="selectedDateObj"
+          date-format="dd/mm/yy"
+          :max-date="today"
+          show-button-bar
+          :manual-input="false"
+          class="dp-compact"
+        />
 
         <button v-if="isToday" class="live-btn" :class="{ active: liveMode }" @click="toggleLive">
           <span class="live-dot" :class="{ pulse: liveMode }" />
@@ -134,13 +147,26 @@ function formatMinutes(m: number): string {
     <!-- Mode intervalle -->
     <template v-else>
       <div class="range-inputs">
-        <label>
-          Du
-          <input type="date" v-model="rangeFrom" :max="rangeTo" />
+        <label>Du
+          <DatePicker
+            v-model="rangeFromObj"
+            date-format="dd/mm/yy"
+            :max-date="rangeToObj ?? today"
+            show-button-bar
+            :manual-input="false"
+            class="dp-compact"
+          />
         </label>
-        <label>
-          Au
-          <input type="date" v-model="rangeTo" :min="rangeFrom" :max="isoDate(today)" />
+        <label>Au
+          <DatePicker
+            v-model="rangeToObj"
+            date-format="dd/mm/yy"
+            :min-date="rangeFromObj ?? undefined"
+            :max-date="today"
+            show-button-bar
+            :manual-input="false"
+            class="dp-compact"
+          />
         </label>
       </div>
     </template>
@@ -203,13 +229,14 @@ function formatMinutes(m: number): string {
 }
 .quick-days button:hover:not(.active) { border-color: #6b7280; }
 
-.quick-days input[type="date"] {
+:deep(.dp-compact .p-datepicker-input) {
   background: #111827;
   color: #f3f4f6;
   border: 1px solid #374151;
   border-radius: 4px;
-  padding: 0.2rem 0.4rem;
+  padding: 0.2rem 0.5rem;
   font-size: 0.8rem;
+  width: 7rem;
 }
 
 .live-btn {
@@ -266,13 +293,5 @@ input[type="range"] {
   gap: 0.2rem;
   font-size: 0.8rem;
   color: #9ca3af;
-}
-.range-inputs input[type="date"] {
-  background: #111827;
-  color: #f3f4f6;
-  border: 1px solid #374151;
-  border-radius: 4px;
-  padding: 0.25rem 0.5rem;
-  font-size: 0.85rem;
 }
 </style>
