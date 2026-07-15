@@ -27,7 +27,8 @@ const props = defineProps<{
 
 const mapEl = ref<HTMLDivElement>()
 const basemap = ref<'osm' | 'mapbox'>('mapbox')
-const traceStyle = ref<TraceStyle>('line')
+const TRACE_STYLE_KEY = 'trackermap.traceStyle'
+const traceStyle = ref<TraceStyle>((localStorage.getItem(TRACE_STYLE_KEY) as TraceStyle) ?? 'line')
 const popup = ref<{
   time: string
   lat: string
@@ -155,6 +156,12 @@ watch(() => [props.currentPosition, props.history] as const, ([pos, _], [oldPos]
     map.getView().animate({ center: fromLonLat([pos.longitude, pos.latitude]), duration: 400 })
 }, { deep: true })
 
+function setTraceStyle(s: TraceStyle) {
+  traceStyle.value = s
+  localStorage.setItem(TRACE_STYLE_KEY, s)
+  updateFeatures()
+}
+
 function updateFeatures() {
   if (!vectorSource) return
   vectorSource.clear()
@@ -256,9 +263,9 @@ function zoomToExtent() {
         {{ basemap === 'osm' ? 'Sat' : 'OSM' }}
       </button>
       <div class="trace-style-group" title="Style du tracé">
-        <button class="map-btn trace-btn" :class="{ active: traceStyle === 'line' }" @click="traceStyle = 'line'; updateFeatures()">—</button>
-        <button class="map-btn trace-btn" :class="{ active: traceStyle === 'arrows' }" @click="traceStyle = 'arrows'; updateFeatures()">→</button>
-        <button class="map-btn trace-btn" :class="{ active: traceStyle === 'speed' }" @click="traceStyle = 'speed'; updateFeatures()">≋</button>
+        <button class="map-btn trace-btn" :class="{ active: traceStyle === 'line' }" @click="setTraceStyle('line')">—</button>
+        <button class="map-btn trace-btn" :class="{ active: traceStyle === 'arrows' }" @click="setTraceStyle('arrows')">→</button>
+        <button class="map-btn trace-btn" :class="{ active: traceStyle === 'speed' }" @click="setTraceStyle('speed')">≋</button>
       </div>
     </div>
   </div>
