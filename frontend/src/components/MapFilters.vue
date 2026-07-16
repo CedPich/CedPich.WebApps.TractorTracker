@@ -10,7 +10,9 @@ const mode = ref<Mode>('day')
 
 // --- Mode journée ---
 const today = new Date()
-function isoDate(d: Date): string { return d.toISOString().substring(0, 10) }
+function isoDate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
 function dateAgo(n: number): Date { const d = new Date(today); d.setDate(d.getDate() - n); return d }
 
 const todayStr = isoDate(today)

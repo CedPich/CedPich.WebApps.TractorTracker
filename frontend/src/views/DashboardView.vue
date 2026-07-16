@@ -18,7 +18,9 @@ const mapLive = ref(false)
 const workFrom = ref(new Date(Date.now() - 86400000 * 30))
 const workTo = ref(new Date())
 const pauseThresholdMinutes = ref(15)
-function toIso(d: Date): string { return d.toISOString().substring(0, 10) }
+function toIso(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
 
 // Remplit les jours sans données avec 0 heures
 const filledWorkHours = computed(() => {
