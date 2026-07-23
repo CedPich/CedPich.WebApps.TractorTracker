@@ -87,7 +87,8 @@ public class WebhookController(
         if (isResumingAfterInactivity)
         {
             logger.LogInformation("Reprise d'activité après inactivité, envoi notification push");
-            var localTime = ev.Timestamp.ToLocalTime();
+            var paris = TimeZoneInfo.FindSystemTimeZoneById("Europe/Paris");
+            var localTime = TimeZoneInfo.ConvertTime(ev.Timestamp, paris);
             var dateStr = localTime.ToString("dd/MM/yyyy à HH:mm");
             await push.SendAsync("TractorTracker", $"{machine.Name} est en marche 🚜\n{dateStr}", ct);
         }
